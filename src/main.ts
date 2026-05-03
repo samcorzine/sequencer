@@ -8,6 +8,28 @@ const clearBtn = document.getElementById("clear") as HTMLButtonElement;
 const bpmInput = document.getElementById("bpm") as HTMLInputElement;
 const bpmVal = document.getElementById("bpmVal") as HTMLSpanElement;
 
+const waveSel = document.getElementById("wave") as HTMLSelectElement;
+const attackInput = document.getElementById("attack") as HTMLInputElement;
+const releaseInput = document.getElementById("release") as HTMLInputElement;
+const cutoffInput = document.getElementById("cutoff") as HTMLInputElement;
+const resonanceInput = document.getElementById("resonance") as HTMLInputElement;
+const delayOnInput = document.getElementById("delayOn") as HTMLInputElement;
+const delayTimeInput = document.getElementById("delayTime") as HTMLInputElement;
+const delayFbInput = document.getElementById("delayFb") as HTMLInputElement;
+const volumeInput = document.getElementById("volume") as HTMLInputElement;
+
+const synth = {
+  wave: waveSel.value as OscillatorType,
+  attack: parseInt(attackInput.value, 10) / 1000,
+  release: parseInt(releaseInput.value, 10) / 1000,
+  cutoff: parseInt(cutoffInput.value, 10),
+  resonance: parseFloat(resonanceInput.value),
+  delayOn: delayOnInput.checked,
+  delayTime: parseFloat(delayTimeInput.value),
+  delayFb: parseFloat(delayFbInput.value),
+  volume: parseFloat(volumeInput.value),
+};
+
 const W = canvas.width;
 const H = canvas.height;
 
@@ -38,6 +60,10 @@ let bpm = parseInt(bpmInput.value, 10);
 let isPlaying = false;
 let audioCtx: AudioContext | null = null;
 let masterGain: GainNode | null = null;
+let dryBus: GainNode | null = null;
+let delayNode: DelayNode | null = null;
+let delayFbGain: GainNode | null = null;
+let delayWet: GainNode | null = null;
 
 // Loop length in seconds. Treat the canvas width as 4 bars of 4/4 sixteenths
 // so feel matches the BPM (16 sixteenths per bar * 4 bars = 64 subdivisions).
@@ -59,24 +85,48 @@ function ensureAudio() {
   if (!audioCtx) {
     audioCtx = new AudioContext();
     masterGain = audioCtx.createGain();
-    masterGain.gain.value = 0.55;
+    masterGain.gain.value = synth.volume;
     masterGain.connect(audioCtx.destination);
+
+    dryBus = audioCtx.createGain();
+    dryBus.connect(masterGain);
+
+    delayNode = audioCtx.createDelay(1.5);
+    delayNode.delayTime.value = synth.delayTime;
+    delayFbGain = audioCtx.createGain();
+    delayFbGain.gain.value = synth.delayFb;
+    delayWet = audioCtx.createGain();
+    delayWet.gain.value = synth.delayOn ? 0.5 : 0;
+
+    delayNode.connect(delayFbGain).connect(delayNode);
+    delayNode.connect(delayWet).connect(masterGain);
   }
 }
 
 function playNoteAt(midi: number, when: number) {
-  if (!audioCtx || !masterGain) return;
+  if (!audioCtx || !dryBus || !delayNode) return;
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
-  osc.type = "triangle";
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.value = synth.cutoff;
+  filter.Q.value = synth.resonance;
+
+  osc.type = synth.wave;
   osc.frequency.value = midiToFreq(midi);
-  const dur = 0.28;
+
+  const atk = Math.max(0.001, synth.attack);
+  const rel = Math.max(0.02, synth.release);
   gain.gain.setValueAtTime(0, when);
-  gain.gain.linearRampToValueAtTime(0.4, when + 0.005);
-  gain.gain.exponentialRampToValueAtTime(0.0001, when + dur);
-  osc.connect(gain).connect(masterGain);
+  gain.gain.linearRampToValueAtTime(0.4, when + atk);
+  gain.gain.exponentialRampToValueAtTime(0.0001, when + atk + rel);
+
+  osc.connect(gain).connect(filter);
+  filter.connect(dryBus);
+  if (synth.delayOn) filter.connect(delayNode);
+
   osc.start(when);
-  osc.stop(when + dur + 0.02);
+  osc.stop(when + atk + rel + 0.05);
 }
 
 function scheduler() {
@@ -287,6 +337,36 @@ clearBtn.addEventListener("click", () => {
 bpmInput.addEventListener("input", () => {
   bpm = parseInt(bpmInput.value, 10);
   bpmVal.textContent = String(bpm);
+});
+
+function bind(input: HTMLInputElement, valEl: string, fn: (v: string) => void, fmt?: (v: string) => string) {
+  const span = document.getElementById(valEl);
+  input.addEventListener("input", () => {
+    fn(input.value);
+    if (span) span.textContent = fmt ? fmt(input.value) : input.value;
+  });
+}
+
+waveSel.addEventListener("change", () => { synth.wave = waveSel.value as OscillatorType; });
+bind(attackInput, "attackVal", (v) => { synth.attack = parseInt(v, 10) / 1000; });
+bind(releaseInput, "releaseVal", (v) => { synth.release = parseInt(v, 10) / 1000; });
+bind(cutoffInput, "cutoffVal", (v) => { synth.cutoff = parseInt(v, 10); });
+bind(resonanceInput, "resonanceVal", (v) => { synth.resonance = parseFloat(v); }, (v) => parseFloat(v).toFixed(1));
+bind(delayTimeInput, "delayTimeVal", (v) => {
+  synth.delayTime = parseFloat(v);
+  if (delayNode && audioCtx) delayNode.delayTime.setTargetAtTime(synth.delayTime, audioCtx.currentTime, 0.01);
+}, (v) => parseFloat(v).toFixed(2));
+bind(delayFbInput, "delayFbVal", (v) => {
+  synth.delayFb = parseFloat(v);
+  if (delayFbGain) delayFbGain.gain.value = synth.delayFb;
+}, (v) => parseFloat(v).toFixed(2));
+bind(volumeInput, "volumeVal", (v) => {
+  synth.volume = parseFloat(v);
+  if (masterGain) masterGain.gain.value = synth.volume;
+}, (v) => parseFloat(v).toFixed(2));
+delayOnInput.addEventListener("change", () => {
+  synth.delayOn = delayOnInput.checked;
+  if (delayWet) delayWet.gain.value = synth.delayOn ? 0.5 : 0;
 });
 
 loop();

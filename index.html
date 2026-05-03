@@ -11,13 +11,57 @@
         font-family: ui-sans-serif, system-ui, sans-serif;
         background: #0c0d10;
         color: #e6e8eb;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 12px;
         padding: 16px;
       }
-      .controls { display: flex; gap: 12px; align-items: center; }
+      .layout {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        justify-content: center;
+      }
+      .stage {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: center;
+      }
+      .controls {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 240px;
+      }
+      .group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 10px 12px;
+        background: #14161a;
+        border: 1px solid #2a2d33;
+        border-radius: 8px;
+      }
+      .group .title {
+        font-size: 11px;
+        color: #7a8088;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .group label {
+        justify-content: space-between;
+        width: 100%;
+      }
+      .group input[type=range] { width: 110px; }
+      .row { display: flex; gap: 8px; }
+      .row button { flex: 1; }
+      select {
+        background: #1a1d22;
+        color: #e6e8eb;
+        border: 1px solid #2a2d33;
+        border-radius: 4px;
+        padding: 4px 6px;
+        font-size: 13px;
+      }
+      input[type=checkbox] { accent-color: #1f6feb; }
       button {
         background: #1f6feb;
         color: white;
@@ -40,13 +84,51 @@
     </style>
   </head>
   <body>
-    <div class="controls">
-      <button id="play">Play</button>
-      <button id="clear" class="secondary">Clear</button>
-      <label>BPM <input id="bpm" type="range" min="40" max="200" value="110" /><span id="bpmVal">110</span></label>
+    <div class="layout">
+      <div class="stage">
+        <canvas id="grid" width="960" height="520"></canvas>
+        <div class="hint">Click empty space to add a tile · drag to move · shift-click or right-click to delete</div>
+      </div>
+
+      <div class="controls">
+        <div class="group">
+          <span class="title">Transport</span>
+          <div class="row">
+            <button id="play">Play</button>
+            <button id="clear" class="secondary">Clear</button>
+          </div>
+          <label>BPM <input id="bpm" type="range" min="40" max="200" value="110" /><span id="bpmVal">110</span></label>
+        </div>
+
+        <div class="group">
+          <span class="title">Synth</span>
+          <label>Wave
+            <select id="wave">
+              <option value="triangle" selected>triangle</option>
+              <option value="sine">sine</option>
+              <option value="square">square</option>
+              <option value="sawtooth">saw</option>
+            </select>
+          </label>
+          <label>Atk <input id="attack" type="range" min="1" max="500" value="5" /><span id="attackVal">5</span></label>
+          <label>Rel <input id="release" type="range" min="50" max="2000" value="280" /><span id="releaseVal">280</span></label>
+        </div>
+
+        <div class="group">
+          <span class="title">Filter</span>
+          <label>Cutoff <input id="cutoff" type="range" min="100" max="12000" value="6000" /><span id="cutoffVal">6000</span></label>
+          <label>Q <input id="resonance" type="range" min="0" max="20" step="0.1" value="1" /><span id="resonanceVal">1.0</span></label>
+        </div>
+
+        <div class="group">
+          <span class="title">FX</span>
+          <label>Delay <input id="delayOn" type="checkbox" /></label>
+          <label>Time <input id="delayTime" type="range" min="0.05" max="0.8" step="0.01" value="0.25" /><span id="delayTimeVal">0.25</span></label>
+          <label>Fb <input id="delayFb" type="range" min="0" max="0.9" step="0.01" value="0.35" /><span id="delayFbVal">0.35</span></label>
+          <label>Vol <input id="volume" type="range" min="0" max="1" step="0.01" value="0.55" /><span id="volumeVal">0.55</span></label>
+        </div>
+      </div>
     </div>
-    <canvas id="grid" width="960" height="520"></canvas>
-    <div class="hint">Click empty space to add a tile · drag to move · shift-click or right-click to delete</div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
