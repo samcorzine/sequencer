@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sequencer</title>
+    <style>
+      :root { color-scheme: dark; }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        background: #0c0d10;
+        color: #e6e8eb;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        padding: 16px;
+      }
+      .controls { display: flex; gap: 12px; align-items: center; }
+      button {
+        background: #1f6feb;
+        color: white;
+        border: 0;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      button.secondary { background: #2a2d33; }
+      label { font-size: 13px; color: #9aa0a6; display: flex; gap: 6px; align-items: center; }
+      input[type=range] { width: 140px; }
+      canvas {
+        background: #14161a;
+        border-radius: 8px;
+        cursor: crosshair;
+        box-shadow: 0 0 0 1px #2a2d33;
+      }
+      .hint { font-size: 12px; color: #7a8088; }
+    </style>
+  </head>
+  <body>
+    <div class="controls">
+      <button id="play">Play</button>
+      <button id="clear" class="secondary">Clear</button>
+      <label>BPM <input id="bpm" type="range" min="40" max="200" value="110" /><span id="bpmVal">110</span></label>
+    </div>
+    <canvas id="grid" width="960" height="520"></canvas>
+    <div class="hint">Click empty space to add a tile · drag to move · shift-click or right-click to delete</div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
