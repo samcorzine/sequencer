@@ -42,5 +42,11 @@ visual guidelines — tiles are not snapped to them.
 ## Stack
 
 Vanilla TypeScript + Canvas 2D + Web Audio API, bundled with Vite. No runtime
+
+
+## Testing
+Hi Ryan
+
+
 dependencies.
 # sequencer
